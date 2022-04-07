@@ -24,3 +24,10 @@ def calculate_lower_bound(schema, lower_bound_lamb, lower_bound_lamb_mu):
         result *= readiness_coefficient
 
     return result
+
+
+def calculate_precise_lower_bound(lower_bound_lamb, lower_bound_lamb_mu):
+    rc = lower_bound_lamb_mu / (lower_bound_lamb + lower_bound_lamb_mu)
+
+    return rc * (2 * lower_bound_lamb_mu * lower_bound_lamb + lower_bound_lamb_mu ** 2) / (2 * (
+            lower_bound_lamb ** 2) + 2 * lower_bound_lamb_mu * lower_bound_lamb + lower_bound_lamb_mu ** 2) * rc

@@ -1,4 +1,3 @@
-
 from collections import defaultdict
 
 import numpy as np
@@ -35,7 +34,7 @@ class Metrics:
             print('{} | {}'.format(key, self.metrics[key]))
 
     def average(self, time):
-        return self.sum(time) / len(self.metrics[time])
+        return self.sum(time) / support.count_all_elements(self.metrics[time])
 
     def sum(self, time):
         result = 0
@@ -99,7 +98,7 @@ class System(object):
 
 
 class SystemStack(object):
-    def __init__(self, system_stack_env, system_stack_id, system_number, schema, workers_number):
+    def __init__(self, system_stack_env, system_stack_id, schema, workers_number):
         self.env = system_stack_env
 
         self.system_stack_id = system_stack_id
@@ -107,7 +106,7 @@ class SystemStack(object):
         self.systems = []
         self.worker_group = simpy.Resource(self.env, capacity=workers_number)
 
-        for number in range(system_number):
+        for number in range(support.count_all_elements(self.schema)):
             self.systems.append(System(self.env, number, self.worker_group))
 
         self.env.process(self.monitor())
@@ -184,33 +183,36 @@ for i in range(defaults.default_system_stacks_number):
     ss = SystemStack(
         system_stack_env=env,
         system_stack_id=i,
-        system_number=4,
         schema=defaults.default_schema,
         workers_number=defaults.default_workers_number
     )
     env.run(until=defaults.default_modeling_time)
 
-# metrics.print()
-# metrics.print_avg()
+if defaults.DEBUG:
+    metrics.print()
+    metrics.print_avg()
 
-avg_practical = metrics.get_avg()
+avg_practical_vector = metrics.get_avg()
+avg_from_practical_vector = support.get_avg_over_array(avg_practical_vector[int(defaults.default_modeling_time / 5):])
 theoretical_upper = theoretic.calculate_upper_bound(defaults.default_schema, defaults.lamb, defaults.mu)
 theoretical_lower = theoretic.calculate_lower_bound(defaults.default_schema, defaults.lamb, defaults.mu)
 
 print(theoretical_upper)
 print(theoretical_lower)
-print(avg_practical)
+print(avg_from_practical_vector)
 
 # graphs
-x_points = np.arange(1, len(avg_practical) + 1)
+x_points = np.arange(1, len(avg_practical_vector) + 1)
 fig = plt.figure()
-plt.plot(x_points.tolist(), avg_practical, label='Practical')
+plt.plot(x_points.tolist(), avg_practical_vector, label='Practical')
 plt.axhline(y=theoretical_upper, color='r', label='Upper bound')
 plt.axhline(y=theoretical_lower, color='g', label='Lower bound')
+plt.axhline(y=theoretic.calculate_precise_lower_bound(defaults.lamb, defaults.mu), color='y',
+            label='Lower bound precise')
 plt.legend()
-plt.title('Расчет')
+plt.title('Modeling results')
 plt.xlabel("Time")
-plt.ylabel("К_г")
+plt.ylabel("C_r")
 plt.grid(True)
-plt.show()
-
+# plt.show()
+plt.savefig('plot.png')
